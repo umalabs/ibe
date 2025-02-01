@@ -1,2 +1,1 @@
-# ibe
-Identity-Based Encryption
+# The Mechanisms of Symmetric Identity-Based Encryption
