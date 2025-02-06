@@ -10,7 +10,7 @@
 @startuml
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as HashGen
-participant "Hash Key\nRND Generator" as HashKeyRND
+participant "Content Hash Key\nRND Generator" as HashKeyRND
 participant "Content Encryption\n(AES-256-CRT)" as DataEnc
 participant "Content Enc. Key\nRND Generator" as DataEncKeyRND
 participant "Content IV\nRND Generator" as DataIV_RND
@@ -24,7 +24,7 @@ participant Entropy_Client as "Entropy"
 participant "Content\nCiphertext" as CipheredDataOutput
 
 ' --- Client-Side Generated Metadata ---
-participant "Hash Key" as HashKeyOutput
+participant "Content Hash Key" as HashKeyOutput
 participant "Content IV" as DataIVOutput
 
 ' --- RS ---
@@ -99,14 +99,14 @@ activate AA
 
 PlainDataInput -> HashGen: Content Plaintext
 ' --- Content Hash Generation ---
-HashGen -> HashKeyRND: Get Hash Key
+HashGen -> HashKeyRND: Get Content Hash Key
 ' --- Hash Key Generation ---
 activate HashKeyRND
-HashKeyRND -> HashKeyRND: Generate\nRandom\nHash Key
-HashKeyRND --> HashGen: Hash Key
+HashKeyRND -> HashKeyRND: Generate\nRandom\nContent Hash Key
+HashKeyRND --> HashGen: Content Hash Key
 deactivate HashKeyRND
 activate HashGen
-HashKeyRND --> HashKeyOutput: Hash Key
+HashKeyRND --> HashKeyOutput: Content Hash Key
 HashGen -> HashGen: Generate\nContent Hash
 
 ' --- Identity AAD Generation ---
