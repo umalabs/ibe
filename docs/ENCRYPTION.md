@@ -9,181 +9,180 @@
 ```plantuml
 @startuml
 ' --- Client ---
-participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as HashGen
-participant "Content Hash Key\nRND Generator" as HashKeyRND
-participant "Content Encryption\n(AES-256-CRT)" as DataEnc
-participant "Content Enc. Key\nRND Generator" as DataEncKeyRND
-participant "Content IV\nRND Generator" as DataIV_RND
-participant "Access\nToken" as AT
+participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
+participant "Content Hash Key\nRND Generator" as ContentHashKeyRND
+participant "Content Encryption\n(AES-256-CRT)" as ContentEncryption
+participant "Content Enc. Key\nRND Generator" as ContentEncKeyRND
+participant "Content IV\nRND Generator" as ContentIV_RND
 
 ' --- Client Inputs ---
-participant "Content\nPlaintext" as PlainDataInput
-participant Entropy_Client as "Entropy"
+participant "Content\nPlaintext" as ContentPlaintext
+participant "Entropy" as ClientEntropy
+participant "Access\nToken" as AccessToken
 
 ' --- Client Outputs ---
-participant "Content\nCiphertext" as CipheredDataOutput
+participant "Content\nCiphertext" as ContentCiphertext
 
 ' --- Client-Side Generated Metadata ---
-participant "Content Hash Key" as HashKeyOutput
-participant "Content IV" as DataIVOutput
+participant "Content Hash Key" as ContentHashKeyMetadata
+participant "Content IV" as ContentIVMetadata
 
 ' --- RS ---
-participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IKG
-participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as DKE
-participant "nonce RND\nGenerator\n(CTR-DRBG-256)" as NRG_DK
-participant "nonce RND\nGenerator\n(CTR-DRBG-256)" as NRG_ID
-participant "Authorization\nAssessment" as AA
+participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
+participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
+participant "Content nonce\nRND Generator\n(CTR-DRBG-256)" as ContentNonceRNDGen
+participant "Identity nonce\nRND Generator\n(CTR-DRBG-256)" as IdentityNonceRNDGen
+participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
-participant Entropy_RS as "Entropy"
-participant Masterkey as "Master Key"
+participant "Entropy" as RSEntropy
+participant "Master Key" as Masterkey
 
 ' --- RS-Side Generated Metadata ---
-participant "Content Enc. Key\nCiphertext" as CipheredDataEncKeyOutput
-participant "Identity\nAAD Tag" as IdentityAADTagOutput
-participant "Identity\nIV" as IdentityIVOutput
-participant "Identity\nAAD" as IdentityAADOutput
+participant "Content Enc. Key\nCiphertext" as ContentEncKeyCiphertextMetadata
+participant "Identity\nAAD Tag" as IdentityAADTagMetadata
+participant "Identity\nIV" as IdentityIVMetadata
+
+' --- Mixed Metadata ---
+participant "Identity\nAAD" as IdentityAAD
 
 box "Client Data" #White
-    participant PlainDataInput
-    participant CipheredDataOutput
-    participant AT
-    participant Entropy_Client
+    participant ContentPlaintext
+    participant ContentCiphertext
+    participant AccessToken
+    participant ClientEntropy
 end box
 
 box "Client"
-    participant HashGen
-    participant HashKeyRND
-    participant DataEnc
-    participant DataEncKeyRND
-    participant DataIV_RND
+    participant ContentHashGen
+    participant ContentHashKeyRND
+    participant ContentEncryption
+    participant ContentEncKeyRND
+    participant ContentIV_RND
 end box
 
 box "Client-Side Generated Metadata" #LightBlue
-    participant HashKeyOutput
-    participant DataIVOutput
+    participant ContentHashKeyMetadata
+    participant ContentIVMetadata
 end box
 
 box "Mixed Metadata" #LightBlue
-    participant IdentityAADOutput
+    participant IdentityAAD
 end box
 
 box "RS-Side Generated Metadata" #LightBlue
-    participant CipheredDataEncKeyOutput
-    participant IdentityIVOutput
-    participant IdentityAADTagOutput
+    participant ContentEncKeyCiphertextMetadata
+    participant IdentityIVMetadata
+    participant IdentityAADTagMetadata
 end box
 
 box "RS"
-    participant DKE
-    participant IKG
-    participant NRG_DK
-    participant NRG_ID
-    participant AA
+    participant ContentEncKeyEncryption
+    participant IdentityEncKeyGen
+    participant ContentNonceRNDGen
+    participant IdentityNonceRNDGen
+    participant AuthorizationAssessment
 end box
 
 box "RS Data" #White
-    participant Entropy_RS
-    participant Masterkey
+    participant RSEntropy as "Entropy"
+    participant Masterkey as "Master Key"
 end box
 
-Entropy_RS -> NRG_ID: Entropy
-Entropy_RS -> NRG_DK: Entropy
-Masterkey -> IKG: Master Key
+RSEntropy -> IdentityNonceRNDGen: Entropy
+RSEntropy -> ContentNonceRNDGen: Entropy
+Masterkey -> IdentityEncKeyGen: Master Key
 
-Entropy_Client -> HashKeyRND: Entropy
-Entropy_Client -> DataIV_RND: Entropy
+ClientEntropy -> ContentHashKeyRND: Entropy
+ClientEntropy -> ContentIV_RND: Entropy
 
-AT->AA: JWT
-activate AA
+AccessToken->AuthorizationAssessment: JWT
+activate AuthorizationAssessment
 
-PlainDataInput -> HashGen: Content Plaintext
+ContentPlaintext -> ContentHashGen: Content Plaintext
 ' --- Content Hash Generation ---
-HashGen -> HashKeyRND: Get Content Hash Key
+ContentHashGen -> ContentHashKeyRND: Get Content Hash Key
 ' --- Hash Key Generation ---
-activate HashKeyRND
-HashKeyRND -> HashKeyRND: Generate\nRandom\nContent Hash Key
-HashKeyRND --> HashGen: Content Hash Key
-deactivate HashKeyRND
-activate HashGen
-HashKeyRND --> HashKeyOutput: Content Hash Key
-HashGen -> HashGen: Generate\nContent Hash
+activate ContentHashKeyRND
+ContentHashKeyRND -> ContentHashKeyRND: Generate\nRandom\nContent Hash Key
+ContentHashKeyRND --> ContentHashGen: Content Hash Key
+deactivate ContentHashKeyRND
+activate ContentHashGen
+ContentHashKeyRND --> ContentHashKeyMetadata: Content Hash Key
+ContentHashGen -> ContentHashGen: Generate\nContent Hash
 
 ' --- Identity AAD Generation ---
-HashGen --> IdentityAADOutput: Content Hash
+ContentHashGen --> IdentityAAD: Content Hash
 
-deactivate HashGen
+deactivate ContentHashGen
 
-PlainDataInput -> DataEnc: Content Plaintext
+ContentPlaintext -> ContentEncryption: Content Plaintext
 ' --- Content Encryption ---
-DataEnc -> DataEncKeyRND: Get Content Enc. Key
+ContentEncryption -> ContentEncKeyRND: Get Content Enc. Key
 ' --- Content Encryption Key Generation ---
-activate DataEncKeyRND
-DataEncKeyRND -> DataEncKeyRND: Generate\nRandom\nContent Enc. Key
-DataEncKeyRND --> DataEnc: Content Enc. Key
-deactivate DataEncKeyRND
-DataEncKeyRND -> DKE: Content Encryption Key
+activate ContentEncKeyRND
+ContentEncKeyRND -> ContentEncKeyRND: Generate\nRandom\nContent Enc. Key
+ContentEncKeyRND --> ContentEncryption: Content Enc. Key
+deactivate ContentEncKeyRND
+ContentEncKeyRND -> ContentEncKeyEncryption: Content Encryption Key
 
 
-DataEnc -> DataIV_RND: Get Content IV
+ContentEncryption -> ContentIV_RND: Get Content IV
 ' --- Content IV Generation ---
-activate DataIV_RND
-DataIV_RND -> DataIV_RND: Generate\nRandom\nContent IV
-DataIV_RND --> DataEnc: Content IV
-deactivate DataIV_RND
-activate DataEnc
-DataIV_RND --> DataIVOutput: Content IV
+activate ContentIV_RND
+ContentIV_RND -> ContentIV_RND: Generate\nRandom\nContent IV
+ContentIV_RND --> ContentEncryption: Content IV
+deactivate ContentIV_RND
+activate ContentEncryption
+ContentIV_RND --> ContentIVMetadata: Content IV
 
-DataEnc -> DataEnc: Encrypt Content
-DataEnc --> CipheredDataOutput: Content Ciphertext
-deactivate DataEnc
+ContentEncryption -> ContentEncryption: Encrypt Content
+ContentEncryption --> ContentCiphertext: Content Ciphertext
+deactivate ContentEncryption
 
 ' --- Identity Enc. Key Generation ---
-DKE -> IKG: Get Identity\nEncryption Key
+ContentEncKeyEncryption -> IdentityEncKeyGen: Get Identity\nEncryption Key
 
-IKG -> NRG_ID: Get Identity nonce
+IdentityEncKeyGen -> IdentityNonceRNDGen: Get Identity nonce
 
 ' --- Identity nonce Generation ---
-activate NRG_ID
-NRG_ID -> NRG_ID: Generate\nRandom\nIdentity nonce
-NRG_ID --> IKG: Identity nonce
-deactivate NRG_ID
-NRG_ID --> IdentityAADOutput: Identity nonce
-note right of IKG: Identity Data = Identity nonce || User ID
+activate IdentityNonceRNDGen
+IdentityNonceRNDGen -> IdentityNonceRNDGen: Generate\nRandom\nIdentity nonce
+IdentityNonceRNDGen --> IdentityEncKeyGen: Identity nonce
+deactivate IdentityNonceRNDGen
+IdentityNonceRNDGen --> IdentityAAD: Identity nonce
+note right of IdentityEncKeyGen: Identity Data = Identity nonce || User ID
 
 
-AA-> IKG: User ID
-deactivate AA
-activate IKG
+AuthorizationAssessment-> IdentityEncKeyGen: User ID
+deactivate AuthorizationAssessment
+activate IdentityEncKeyGen
 
 
-IKG -> IKG: Generate\nIdentity Enc. Key
-IKG --> DKE: Identity Enc. Key
-deactivate IKG
+IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
+IdentityEncKeyGen --> ContentEncKeyEncryption: Identity Enc. Key
+deactivate IdentityEncKeyGen
 
-DKE -> NRG_DK: Get Identity IV
+ContentEncKeyEncryption -> ContentNonceRNDGen: Get Identity IV
 
 ' --- Identity IV Generation ---
-activate NRG_DK
-NRG_DK --> NRG_DK: Generate\nRandom\nIdentity IV
-NRG_DK --> DKE: Identity IV
-deactivate NRG_DK
-NRG_DK --> IdentityIVOutput: Identity IV
+activate ContentNonceRNDGen
+ContentNonceRNDGen --> ContentNonceRNDGen: Generate\nRandom\nIdentity IV
+ContentNonceRNDGen --> ContentEncKeyEncryption: Identity IV
+deactivate ContentNonceRNDGen
+ContentNonceRNDGen --> IdentityIVMetadata: Identity IV
 
-note right of IdentityAADOutput: Identity AAD = Identity nonce || Content Hash 
-IdentityAADOutput -> DKE: Identity AAD
+note right of IdentityAAD: Identity AAD = Identity nonce || Content Hash 
+IdentityAAD -> ContentEncKeyEncryption: Identity AAD
 
-' --- Content Encryption ---
 ' --- Content Key Encryption ---
-activate DKE
-DKE --> DKE: Encrypt\nContent Enc. Key
-DKE --> CipheredDataEncKeyOutput: Content Encryption Key Ciphertext
-DKE --> DKE: Generate\nAAD Tag
-DKE --> IdentityAADTagOutput: Identity\nAAD Tag
+activate ContentEncKeyEncryption
+ContentEncKeyEncryption --> ContentEncKeyEncryption: Encrypt\nContent Enc. Key
+ContentEncKeyEncryption --> ContentEncKeyCiphertextMetadata: Content Encryption Key Ciphertext
+ContentEncKeyEncryption --> ContentEncKeyEncryption: Generate\nAAD Tag
+ContentEncKeyEncryption --> IdentityAADTagMetadata: Identity\nAAD Tag
 
-deactivate DKE
-
-
+deactivate ContentEncKeyEncryption
 
 @enduml
 ```
