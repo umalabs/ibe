@@ -8,6 +8,8 @@
 
 ```plantuml
 @startuml
+!pragma teoz true
+
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
 participant "Content Hash Key\nRND Generator" as ContentHashKeyRND
@@ -16,12 +18,11 @@ participant "Content Enc. Key\nRND Generator" as ContentEncKeyRND
 participant "Content IV\nRND Generator" as ContentIV_RND
 
 ' --- Client Inputs ---
-participant "Content\nPlaintext" as ContentPlaintext
-participant "Entropy" as ClientEntropy
+participant "Content\nplaintext" as ContentPlaintext
 participant "Access\nToken" as AccessToken
 
 ' --- Client Outputs ---
-participant "Content\nCiphertext" as ContentCiphertext
+participant "Content\nciphertext" as ContentCiphertext
 
 ' --- Client-Side Generated Metadata ---
 participant "Content Hash Key" as ContentHashKeyMetadata
@@ -30,50 +31,48 @@ participant "Content IV" as ContentIVMetadata
 ' --- RS ---
 participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
 participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
-participant "Content nonce\nRND Generator\n(CTR-DRBG-256)" as ContentNonceRNDGen
-participant "Identity nonce\nRND Generator\n(CTR-DRBG-256)" as IdentityNonceRNDGen
+participant "Content nonce\nRND Generator" as ContentNonceRNDGen
+participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
 participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
-participant "Entropy" as RSEntropy
-participant "Master Key" as Masterkey
+participant "Master\nKey" as Masterkey
 
 ' --- RS-Side Generated Metadata ---
-participant "Content Enc. Key\nCiphertext" as ContentEncKeyCiphertextMetadata
+participant "Content Enc. Key\nciphertext" as ContentEncKeyCiphertextMetadata
 participant "Identity\nAAD Tag" as IdentityAADTagMetadata
 participant "Identity\nIV" as IdentityIVMetadata
 
 ' --- Mixed Metadata ---
 participant "Identity\nAAD" as IdentityAAD
 
-box "Client Data" #White
-    participant ContentPlaintext
-    participant ContentCiphertext
-    participant AccessToken
-    participant ClientEntropy
-end box
-
 box "Client"
+    box "Client Data" #White
+        participant ContentPlaintext
+        participant ContentCiphertext
+        participant AccessToken
+    end box
+
     participant ContentHashGen
     participant ContentHashKeyRND
     participant ContentEncryption
     participant ContentEncKeyRND
     participant ContentIV_RND
-end box
 
-box "Client-Side Generated Metadata" #LightBlue
-    participant ContentHashKeyMetadata
-    participant ContentIVMetadata
-end box
+    box "Client-Side Generated Metadata" #LightBlue
+        participant ContentHashKeyMetadata
+        participant ContentIVMetadata
+    end box
 
-box "Mixed Metadata" #LightBlue
-    participant IdentityAAD
-end box
+    box "Mixed Metadata" #LightBlue
+        participant IdentityAAD
+    end box
 
-box "RS-Side Generated Metadata" #LightBlue
-    participant ContentEncKeyCiphertextMetadata
-    participant IdentityIVMetadata
-    participant IdentityAADTagMetadata
+    box "RS-Side Generated Metadata" #LightBlue
+        participant ContentEncKeyCiphertextMetadata
+        participant IdentityIVMetadata
+        participant IdentityAADTagMetadata
+    end box
 end box
 
 box "RS"
@@ -82,24 +81,15 @@ box "RS"
     participant ContentNonceRNDGen
     participant IdentityNonceRNDGen
     participant AuthorizationAssessment
+
+    box "RS Data" #White
+        participant Masterkey as "Master Key"
+    end box
 end box
 
-box "RS Data" #White
-    participant RSEntropy as "Entropy"
-    participant Masterkey as "Master Key"
-end box
-
-RSEntropy -> IdentityNonceRNDGen: Entropy
-RSEntropy -> ContentNonceRNDGen: Entropy
 Masterkey -> IdentityEncKeyGen: Master Key
 
-ClientEntropy -> ContentHashKeyRND: Entropy
-ClientEntropy -> ContentIV_RND: Entropy
-
-AccessToken->AuthorizationAssessment: JWT
-activate AuthorizationAssessment
-
-ContentPlaintext -> ContentHashGen: Content Plaintext
+ContentPlaintext -> ContentHashGen: Content plaintext
 ' --- Content Hash Generation ---
 ContentHashGen -> ContentHashKeyRND: Get Content Hash Key
 ' --- Hash Key Generation ---
@@ -109,14 +99,14 @@ ContentHashKeyRND --> ContentHashGen: Content Hash Key
 deactivate ContentHashKeyRND
 activate ContentHashGen
 ContentHashKeyRND --> ContentHashKeyMetadata: Content Hash Key
-ContentHashGen -> ContentHashGen: Generate\nContent Hash
+ContentHashGen -> ContentHashGen: Generate\nContent hash
 
 ' --- Identity AAD Generation ---
-ContentHashGen --> IdentityAAD: Content Hash
+ContentHashGen --> IdentityAAD: Content hash
 
 deactivate ContentHashGen
 
-ContentPlaintext -> ContentEncryption: Content Plaintext
+ContentPlaintext -> ContentEncryption: Content plaintext
 ' --- Content Encryption ---
 ContentEncryption -> ContentEncKeyRND: Get Content Enc. Key
 ' --- Content Encryption Key Generation ---
@@ -124,8 +114,12 @@ activate ContentEncKeyRND
 ContentEncKeyRND -> ContentEncKeyRND: Generate\nRandom\nContent Enc. Key
 ContentEncKeyRND --> ContentEncryption: Content Enc. Key
 deactivate ContentEncKeyRND
-ContentEncKeyRND -> ContentEncKeyEncryption: Content Encryption Key
 
+' --- Request ---
+note across: "A JWT-authorized request for the encryption of the Content Encryption Key"
+AccessToken->AuthorizationAssessment: JWT
+activate AuthorizationAssessment
+ContentEncKeyRND -> ContentEncKeyEncryption: Content Encryption Key
 
 ContentEncryption -> ContentIV_RND: Get Content IV
 ' --- Content IV Generation ---
@@ -137,7 +131,7 @@ activate ContentEncryption
 ContentIV_RND --> ContentIVMetadata: Content IV
 
 ContentEncryption -> ContentEncryption: Encrypt Content
-ContentEncryption --> ContentCiphertext: Content Ciphertext
+ContentEncryption --> ContentCiphertext: Content ciphertext
 deactivate ContentEncryption
 
 ' --- Identity Enc. Key Generation ---
@@ -150,14 +144,15 @@ activate IdentityNonceRNDGen
 IdentityNonceRNDGen -> IdentityNonceRNDGen: Generate\nRandom\nIdentity nonce
 IdentityNonceRNDGen --> IdentityEncKeyGen: Identity nonce
 deactivate IdentityNonceRNDGen
-IdentityNonceRNDGen --> IdentityAAD: Identity nonce
-note right of IdentityEncKeyGen: Identity Data = Identity nonce || User ID
 
+note across: "A response containing the Identity nonce, Identity IV, Content Encryption Key ciphertext, and Identity AAD tag"
+
+IdentityNonceRNDGen --> IdentityAAD: Identity nonce
+note right of IdentityEncKeyGen: As a Key use the Identity Data = Identity nonce || User ID
 
 AuthorizationAssessment-> IdentityEncKeyGen: User ID
 deactivate AuthorizationAssessment
 activate IdentityEncKeyGen
-
 
 IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
 IdentityEncKeyGen --> ContentEncKeyEncryption: Identity Enc. Key
@@ -172,13 +167,13 @@ ContentNonceRNDGen --> ContentEncKeyEncryption: Identity IV
 deactivate ContentNonceRNDGen
 ContentNonceRNDGen --> IdentityIVMetadata: Identity IV
 
-note right of IdentityAAD: Identity AAD = Identity nonce || Content Hash 
+note right of IdentityAAD: Identity AAD = Identity nonce || Content hash
 IdentityAAD -> ContentEncKeyEncryption: Identity AAD
 
 ' --- Content Key Encryption ---
 activate ContentEncKeyEncryption
 ContentEncKeyEncryption --> ContentEncKeyEncryption: Encrypt\nContent Enc. Key
-ContentEncKeyEncryption --> ContentEncKeyCiphertextMetadata: Content Encryption Key Ciphertext
+ContentEncKeyEncryption --> ContentEncKeyCiphertextMetadata: Content Encryption Key ciphertext
 ContentEncKeyEncryption --> ContentEncKeyEncryption: Generate\nAAD Tag
 ContentEncKeyEncryption --> IdentityAADTagMetadata: Identity\nAAD Tag
 
