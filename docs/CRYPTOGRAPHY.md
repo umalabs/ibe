@@ -189,6 +189,88 @@ deactivate ContentEncKeyEncryption
 ```plantuml
 @startuml
 !pragma teoz true
+title Decryption
+
+' --- Client ---
+participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
+participant "Content Hash Key\nRND Generator" as ContentHashKeyRNDGen
+participant "Content Encryption\n(AES-256-CRT)" as ContentEncryption
+participant "Content Enc. Key\nRND Generator" as ContentEncKeyRNDGen
+participant "Content IV\nRND Generator" as ContentIV_RNDGen
+
+' --- Client Inputs ---
+participant "Content\nplaintext" as ContentPlaintext
+participant "Access\nToken" as AccessToken
+
+' --- Client Outputs ---
+participant "Content\nciphertext" as ContentCiphertext
+
+' --- Client-Side Generated Metadata ---
+participant "Content Hash Key" as ContentHashKeyMetadata
+participant "Content IV" as ContentIVMetadata
+
+' --- RS ---
+participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
+participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
+participant "Content nonce\nRND Generator" as ContentNonceRNDGen
+participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
+participant "Authorization\nAssessment" as AuthorizationAssessment
+
+' --- RS Inputs ---
+participant "Master\nKey" as Masterkey
+
+' --- RS-Side Generated Metadata ---
+participant "Content Enc. Key\nciphertext" as ContentEncKeyCiphertextMetadata
+participant "Identity\nAAD Tag" as IdentityAADTagMetadata
+participant "Identity\nIV" as IdentityIVMetadata
+
+' --- Mixed Metadata ---
+participant "Identity\nAAD" as IdentityAADMetadata
+
+box "Client"
+    box "Client Data" #White
+        participant ContentPlaintext
+        participant ContentCiphertext
+        participant AccessToken
+    end box
+
+    participant ContentHashGen
+    participant ContentHashKeyRNDGen
+    participant ContentEncryption
+    participant ContentEncKeyRNDGen
+    participant ContentIV_RNDGen
+
+    box "Client-Side Generated Metadata" #LightBlue
+        participant ContentHashKeyMetadata
+        participant ContentIVMetadata
+    end box
+
+    box "Mixed Metadata" #LightBlue
+        participant IdentityAADMetadata
+    end box
+
+    box "RS-Side Generated Metadata" #LightBlue
+        participant ContentEncKeyCiphertextMetadata
+        participant IdentityIVMetadata
+        participant IdentityAADTagMetadata
+    end box
+end box
+
+box "RS"
+    participant ContentEncKeyEncryption
+    participant IdentityEncKeyGen
+    participant ContentNonceRNDGen
+    participant IdentityNonceRNDGen
+    participant AuthorizationAssessment
+
+    box "RS Data" #White
+        participant Masterkey as "Master Key"
+    end box
+end box
+
+note across: The request from the Client to the RS for decrypting the Content Encryption Key is authorized using JWT. The response includes the Content Encryption Key.
+
+Masterkey -> IdentityEncKeyGen: Master Key
 @enduml
 ```
 
