@@ -1,4 +1,4 @@
-# Identity-Based Symmetric Key Encryption Mechanisms
+# Identity-Based Symmetric Key Cryptography Mechanisms
 
 ## Acronyms
 
@@ -9,6 +9,8 @@
 ```plantuml
 @startuml
 !pragma teoz true
+
+title Encryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
@@ -94,7 +96,7 @@ Masterkey -> IdentityEncKeyGen: Master Key
 ' --- Content plaintext for hash generation ---
 ContentPlaintext -> ContentHashGen: Content plaintext
 ' --- Content Hash Generation ---
-ContentHashGen -> ContentHashKeyRNDGen: Get\nContent Hash Key
+ContentHashGen -> ContentHashKeyRNDGen: Get ContentHash Key
 ' --- Content Hash Key Generation process ---
 activate ContentHashKeyRNDGen
 ContentHashKeyRNDGen -> ContentHashKeyRNDGen: Generate Random\nContent Hash Key
@@ -103,7 +105,7 @@ deactivate ContentHashKeyRNDGen
 ' --- Content Hash Generation process ---
 activate ContentHashGen
 ContentHashKeyRNDGen --> ContentHashKeyMetadata: Content Hash Key
-ContentHashGen -> ContentHashGen: Generate\nContent hash
+ContentHashGen -> ContentHashGen: GenerateContent hash
 ContentHashGen --> IdentityAADMetadata: Content hash
 deactivate ContentHashGen
 
@@ -179,6 +181,14 @@ ContentEncKeyEncryption --> ContentEncKeyEncryption: Generate\nAAD Tag
 ContentEncKeyEncryption --> IdentityAADTagMetadata: Identity\nAAD Tag
 deactivate ContentEncKeyEncryption
 
+@enduml
+```
+
+**Sequence Diagram for Decryption:**
+
+```plantuml
+@startuml
+!pragma teoz true
 @enduml
 ```
 
