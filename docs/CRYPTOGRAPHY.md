@@ -123,8 +123,8 @@ note right of AccessToken: The JWT is included in the authorization header of th
 AccessToken->AuthorizationAssessment: JWT
 activate AuthorizationAssessment
 ' --- Request Body ---
-note right of ContentEncKeyRNDGen: The Content Encryption Key is included in the body of the request
-ContentEncKeyRNDGen -> ContentEncKeyEncryption: Content Encryption Key
+note right of ContentEncKeyRNDGen: The body of the request includes the Content Encryption Key
+ContentEncKeyRNDGen -> ContentEncKeyEncryption: The request for encrypting the Content Encryption Key
 ' --- Content plaintext IV Generation ---
 ContentEncryption -> ContentIV_RNDGen: Get Content IV
 ' --- Content plaintext IV Generation process ---
@@ -193,10 +193,7 @@ title Decryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
-participant "Content Hash Key\nRND Generator" as ContentHashKeyRNDGen
-participant "Content Encryption\n(AES-256-CRT)" as ContentEncryption
-participant "Content Enc. Key\nRND Generator" as ContentEncKeyRNDGen
-participant "Content IV\nRND Generator" as ContentIV_RNDGen
+participant "Content Decryption\n(AES-256-CRT)" as ContentDecryption
 
 ' --- Client Inputs ---
 participant "Content\nplaintext" as ContentPlaintext
@@ -211,9 +208,7 @@ participant "Content IV" as ContentIVMetadata
 
 ' --- RS ---
 participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
-participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
-participant "Content nonce\nRND Generator" as ContentNonceRNDGen
-participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
+participant "Content Enc. Key\nDecryption\n(AES-256-GCM)" as ContentEncKeyDecryption
 participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
@@ -235,10 +230,7 @@ box "Client"
     end box
 
     participant ContentHashGen
-    participant ContentHashKeyRNDGen
-    participant ContentEncryption
-    participant ContentEncKeyRNDGen
-    participant ContentIV_RNDGen
+    participant ContentDecryption
 
     box "Client-Side Generated Metadata" #LightBlue
         participant ContentHashKeyMetadata
@@ -257,10 +249,8 @@ box "Client"
 end box
 
 box "RS"
-    participant ContentEncKeyEncryption
+    participant ContentEncKeyDecryption
     participant IdentityEncKeyGen
-    participant ContentNonceRNDGen
-    participant IdentityNonceRNDGen
     participant AuthorizationAssessment
 
     box "RS Data" #White
@@ -271,6 +261,36 @@ end box
 note across: The request from the Client to the RS for decrypting the Content Encryption Key is authorized using JWT. The response includes the Content Encryption Key.
 
 Masterkey -> IdentityEncKeyGen: Master Key
+
+' --- Content ciphertext decryption ---
+ContentCiphertext -> ContentDecryption: Content ciphertext
+ContentIVMetadata -> ContentDecryption: Content IV
+' --- Request Authorization Header
+note right of AccessToken: The JWT is included in the authorization header of the request
+AccessToken->AuthorizationAssessment: JWT
+activate AuthorizationAssessment
+' --- Request Body ---
+note right of ContentDecryption: The body of the request includes the Content Encryption Key ciphertext, Identity IV, Identity AAD, and Identity AAD Tag
+ContentDecryption -> ContentEncKeyDecryption: The request for decrypting the Content Encryption Key
+' --- Content Encryption Key decryption ---
+ContentEncKeyCiphertextMetadata -> ContentEncKeyDecryption: Content Encryption Key ciphertext
+IdentityIVMetadata -> ContentEncKeyDecryption: Identity IV
+IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
+IdentityAADTagMetadata -> ContentEncKeyDecryption: Identity AAD Tag
+' --- Content Encryption Key decryption process ---
+activate ContentEncKeyDecryption
+ContentEncKeyDecryption -> ContentEncKeyDecryption: Decrypt\nContent Enc. Key\nciphertext
+ContentEncKeyDecryption --> ContentDecryption: Content Enc. Key
+deactivate ContentEncKeyDecryption
+deactivate AuthorizationAssessment
+
+' --- Content plaintext decryption process ---
+activate ContentDecryption
+ContentDecryption -> ContentDecryption: Decrypt Content
+ContentDecryption --> ContentPlaintext: Content plaintext
+deactivate ContentDecryption
+
+
 @enduml
 ```
 
