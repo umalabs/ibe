@@ -87,15 +87,17 @@ box "RS"
     end box
 end box
 
+note across: The request from the Client to the RS for encrypting the Content Encryption Key is authorized using JWT. The response includes the Identity nonce, Identity IV, Content Encryption Key ciphertext, and Identity AAD tag.
+
 Masterkey -> IdentityEncKeyGen: Master Key
 
 ' --- Content plaintext for hash generation ---
 ContentPlaintext -> ContentHashGen: Content plaintext
 ' --- Content Hash Generation ---
-ContentHashGen -> ContentHashKeyRNDGen: Get Content Hash Key
+ContentHashGen -> ContentHashKeyRNDGen: Get\nContent Hash Key
 ' --- Content Hash Key Generation process ---
 activate ContentHashKeyRNDGen
-ContentHashKeyRNDGen -> ContentHashKeyRNDGen: Generate\nRandom\nContent Hash Key
+ContentHashKeyRNDGen -> ContentHashKeyRNDGen: Generate Random\nContent Hash Key
 ContentHashKeyRNDGen --> ContentHashGen: Content Hash Key
 deactivate ContentHashKeyRNDGen
 ' --- Content Hash Generation process ---
@@ -108,22 +110,24 @@ deactivate ContentHashGen
 ' Content plaintext for encryption
 ContentPlaintext -> ContentEncryption: Content plaintext
 ' Content plaintext Encryption
-ContentEncryption -> ContentEncKeyRNDGen: Get Content Enc. Key
+ContentEncryption -> ContentEncKeyRNDGen: Get\nContent Enc. Key
 ' --- Content Encryption Key Generation process ---
 activate ContentEncKeyRNDGen
-ContentEncKeyRNDGen -> ContentEncKeyRNDGen: Generate\nRandom\nContent Enc. Key
+ContentEncKeyRNDGen -> ContentEncKeyRNDGen: Generate Random\nContent Enc. Key
 ContentEncKeyRNDGen --> ContentEncryption: Content Enc. Key
 deactivate ContentEncKeyRNDGen
-' --- Request ---
-note across: "A JWT-authorized request for the encryption of the Content Encryption Key"
+' --- Request Authorization Header
+note right of AccessToken: The JWT is included in the authorization header of the request
 AccessToken->AuthorizationAssessment: JWT
 activate AuthorizationAssessment
+' --- Request Body ---
+note right of ContentEncKeyRNDGen: The Content Encryption Key is included in the body of the request
 ContentEncKeyRNDGen -> ContentEncKeyEncryption: Content Encryption Key
 ' --- Content plaintext IV Generation ---
 ContentEncryption -> ContentIV_RNDGen: Get Content IV
 ' --- Content plaintext IV Generation process ---
 activate ContentIV_RNDGen
-ContentIV_RNDGen -> ContentIV_RNDGen: Generate\nRandom\nContent IV
+ContentIV_RNDGen -> ContentIV_RNDGen: Generate Random\nContent IV
 ContentIV_RNDGen --> ContentEncryption: Content IV
 deactivate ContentIV_RNDGen
 ' --- Content plaintext Encryption process ---
@@ -139,13 +143,12 @@ ContentEncKeyEncryption -> IdentityEncKeyGen: Get Identity\nEncryption Key
 IdentityEncKeyGen -> IdentityNonceRNDGen: Get Identity nonce
 ' --- Identity nonce Generation process ---
 activate IdentityNonceRNDGen
-IdentityNonceRNDGen -> IdentityNonceRNDGen: Generate\nRandom\nIdentity nonce
+IdentityNonceRNDGen -> IdentityNonceRNDGen: Generate Random\nIdentity nonce
 IdentityNonceRNDGen --> IdentityEncKeyGen: Identity nonce
 deactivate IdentityNonceRNDGen
-note across: "A response containing the Identity nonce, Identity IV, Content Encryption Key ciphertext, and Identity AAD tag"
-' --- Response ---
+' --- Response Data ---
 IdentityNonceRNDGen --> IdentityAADMetadata: Identity nonce
-' ???
+' --- Identity Enc. Key Generation ---
 note right of IdentityEncKeyGen: As a Key use the Identity Data = Identity nonce || User ID
 AuthorizationAssessment-> IdentityEncKeyGen: User ID
 deactivate AuthorizationAssessment
@@ -158,10 +161,10 @@ deactivate IdentityEncKeyGen
 ContentEncKeyEncryption -> ContentNonceRNDGen: Get Identity IV
 ' --- Identity IV Generation process ---
 activate ContentNonceRNDGen
-ContentNonceRNDGen --> ContentNonceRNDGen: Generate\nRandom\nIdentity IV
+ContentNonceRNDGen --> ContentNonceRNDGen: Generate Random\nIdentity IV
 ContentNonceRNDGen --> ContentEncKeyEncryption: Identity IV
 deactivate ContentNonceRNDGen
-' --- Response ---
+' --- Response Data ---
 ContentNonceRNDGen --> IdentityIVMetadata: Identity IV
 ' --- Content Key Encryption ---
 note right of IdentityAADMetadata: Identity AAD = Identity nonce || Content hash
@@ -169,10 +172,10 @@ IdentityAADMetadata -> ContentEncKeyEncryption: Identity AAD
 ' --- Content Key Encryption process ---
 activate ContentEncKeyEncryption
 ContentEncKeyEncryption --> ContentEncKeyEncryption: Encrypt\nContent Enc. Key
-' --- Response ---
+' --- Response Data ---
 ContentEncKeyEncryption --> ContentEncKeyCiphertextMetadata: Content Encryption Key ciphertext
 ContentEncKeyEncryption --> ContentEncKeyEncryption: Generate\nAAD Tag
-' --- Response ---
+' --- Response Data ---
 ContentEncKeyEncryption --> IdentityAADTagMetadata: Identity\nAAD Tag
 deactivate ContentEncKeyEncryption
 
