@@ -273,6 +273,7 @@ activate AuthorizationAssessment
 note right of ContentDecryption: The body of the request includes the Content Encryption Key ciphertext, Identity IV, Identity AAD, and Identity AAD Tag
 ContentDecryption -> ContentEncKeyDecryption: The request for decrypting the Content Encryption Key
 ' --- Content Encryption Key decryption ---
+IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
 ContentEncKeyCiphertextMetadata -> ContentEncKeyDecryption: Content Encryption Key ciphertext
 IdentityIVMetadata -> ContentEncKeyDecryption: Identity IV
 IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
