@@ -4,13 +4,13 @@
 
 * RS: Resource Server
 
+<div style="break-after:page"></div>
+
 **Sequence Diagram for Encryption:**
 
 ```plantuml
 @startuml
 !pragma teoz true
-
-title Encryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
@@ -105,6 +105,7 @@ deactivate ContentHashKeyRNDGen
 ' --- Content Hash Generation process ---
 activate ContentHashGen
 ContentHashKeyRNDGen --> ContentHashKeyMetadata: Content Hash Key
+note right of ContentHashGen: key = Content Hash Key,\nmessage = Content plaintext
 ContentHashGen -> ContentHashGen: GenerateContent hash
 ContentHashGen --> IdentityAADMetadata: Content hash
 deactivate ContentHashGen
@@ -118,13 +119,11 @@ activate ContentEncKeyRNDGen
 ContentEncKeyRNDGen -> ContentEncKeyRNDGen: Generate Random\nContent Enc. Key
 ContentEncKeyRNDGen --> ContentEncryption: Content Enc. Key
 deactivate ContentEncKeyRNDGen
+' --- Request for encrypting the Content Encryption Key ---
+ContentEncKeyRNDGen -> ContentEncKeyEncryption: The request for encrypting the Content Encryption Key (the body of the request includes the Content Encryption Key)
 ' --- Request Authorization Header
-note right of AccessToken: The JWT is included in the authorization header of the request
-AccessToken->AuthorizationAssessment: JWT
+AccessToken->AuthorizationAssessment: JWT (the JWT is included in the authorization header of the request)
 activate AuthorizationAssessment
-' --- Request Body ---
-note right of ContentEncKeyRNDGen: The body of the request includes the Content Encryption Key
-ContentEncKeyRNDGen -> ContentEncKeyEncryption: The request for encrypting the Content Encryption Key
 ' --- Content plaintext IV Generation ---
 ContentEncryption -> ContentIV_RNDGen: Get Content IV
 ' --- Content plaintext IV Generation process ---
@@ -151,11 +150,11 @@ deactivate IdentityNonceRNDGen
 ' --- Response Data ---
 IdentityNonceRNDGen --> IdentityAADMetadata: Identity nonce
 ' --- Identity Enc. Key Generation ---
-note right of IdentityEncKeyGen: As a Key use the Identity Data = Identity nonce || User ID
 AuthorizationAssessment-> IdentityEncKeyGen: User ID
 deactivate AuthorizationAssessment
 ' --- Identity Enc. Key Generation process ---
 activate IdentityEncKeyGen
+note right of IdentityEncKeyGen: key = Master Key,\nmessage = Identity nonce || User ID
 IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
 IdentityEncKeyGen --> ContentEncKeyEncryption: Identity Enc. Key
 deactivate IdentityEncKeyGen
@@ -169,8 +168,7 @@ deactivate ContentNonceRNDGen
 ' --- Response Data ---
 ContentNonceRNDGen --> IdentityIVMetadata: Identity IV
 ' --- Content Key Encryption ---
-note right of IdentityAADMetadata: Identity AAD = Identity nonce || Content hash
-IdentityAADMetadata -> ContentEncKeyEncryption: Identity AAD
+IdentityAADMetadata -> ContentEncKeyEncryption: Identity AAD = Identity nonce || Content hash
 ' --- Content Key Encryption process ---
 activate ContentEncKeyEncryption
 ContentEncKeyEncryption --> ContentEncKeyEncryption: Encrypt\nContent Enc. Key
@@ -184,12 +182,13 @@ deactivate ContentEncKeyEncryption
 @enduml
 ```
 
+<div style="break-after:page"></div>
+
 **Sequence Diagram for Decryption:**
 
 ```plantuml
 @startuml
 !pragma teoz true
-title Decryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
@@ -265,25 +264,29 @@ Masterkey -> IdentityEncKeyGen: Master Key
 ' --- Content ciphertext decryption ---
 ContentCiphertext -> ContentDecryption: Content ciphertext
 ContentIVMetadata -> ContentDecryption: Content IV
+' --- Request for decrypting the Content Encryption Key ---
+ContentDecryption -> ContentEncKeyDecryption: The request for decrypting the Content Encryption Key\n(the body of the request includes the Content Encryption Key ciphertext, Identity IV, Identity AAD, and Identity AAD Tag)
 ' --- Request Authorization Header
-note right of AccessToken: The JWT is included in the authorization header of the request
-AccessToken->AuthorizationAssessment: JWT
+AccessToken->AuthorizationAssessment: JWT (the JWT is included in the authorization header of the request)
 activate AuthorizationAssessment
-' --- Request Body ---
-note right of ContentDecryption: The body of the request includes the Content Encryption Key ciphertext, Identity IV, Identity AAD, and Identity AAD Tag
-ContentDecryption -> ContentEncKeyDecryption: The request for decrypting the Content Encryption Key
 ' --- Content Encryption Key decryption ---
 IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
+AuthorizationAssessment-> IdentityEncKeyGen: User ID
+deactivate AuthorizationAssessment
+ContentEncKeyDecryption -> IdentityEncKeyGen: Get the Identity Enc. Key\nusing the Identity nonce\nextracted from the\nIdentity AAD
+activate IdentityEncKeyGen
+note right of IdentityEncKeyGen: key = Master Key,\nmessage = Identity nonce || User ID
+IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
+IdentityEncKeyGen --> ContentEncKeyDecryption: Identity Enc. Key
+deactivate IdentityEncKeyGen
 ContentEncKeyCiphertextMetadata -> ContentEncKeyDecryption: Content Encryption Key ciphertext
 IdentityIVMetadata -> ContentEncKeyDecryption: Identity IV
-IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
 IdentityAADTagMetadata -> ContentEncKeyDecryption: Identity AAD Tag
 ' --- Content Encryption Key decryption process ---
 activate ContentEncKeyDecryption
 ContentEncKeyDecryption -> ContentEncKeyDecryption: Decrypt\nContent Enc. Key\nciphertext
 ContentEncKeyDecryption --> ContentDecryption: Content Enc. Key
 deactivate ContentEncKeyDecryption
-deactivate AuthorizationAssessment
 
 ' --- Content plaintext decryption process ---
 activate ContentDecryption
