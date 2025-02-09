@@ -1,5 +1,9 @@
 # Identity-Based Symmetric Key Cryptography Mechanisms
 
+## Introduction
+
+This is a set of Identity-Based Symmetric Key Cryptography Mechanisms. The client generates a content encryption key to encrypt the user's content. This key is then sent to the Resource Server for further encryption, along with the content hash and the user's ID (email address) of the individual authorized to decrypt it. The Resource Server returns the encrypted content encryption key and the corresponding metadata. To decrypt the content encryption key, the user must be authorized to access the Resource Server using an OAuth 2.0-based mechanism.
+
 ## Acronyms
 
 * RS: Resource Server
@@ -15,7 +19,7 @@
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
 participant "Content Hash Key\nRND Generator" as ContentHashKeyRNDGen
-participant "Content Encryption\n(AES-256-CRT)" as ContentEncryption
+participant "Content Encryption\n(AES-256-CTR)" as ContentEncryption
 participant "Content Enc. Key\nRND Generator" as ContentEncKeyRNDGen
 participant "Content IV\nRND Generator" as ContentIV_RNDGen
 
@@ -106,7 +110,7 @@ deactivate ContentHashKeyRNDGen
 activate ContentHashGen
 ContentHashKeyRNDGen --> ContentHashKeyMetadata: Content Hash Key
 note right of ContentHashGen: key = Content Hash Key,\nmessage = Content plaintext
-ContentHashGen -> ContentHashGen: GenerateContent hash
+ContentHashGen -> ContentHashGen: Generate Content hash
 ContentHashGen --> IdentityAADMetadata: Content hash
 deactivate ContentHashGen
 
@@ -192,7 +196,8 @@ deactivate ContentEncKeyEncryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
-participant "Content Decryption\n(AES-256-CRT)" as ContentDecryption
+participant "Content Authenticity\nVerification" as ContentAuthenticityVerification
+participant "Content Decryption\n(AES-256-CTR)" as ContentDecryption
 
 ' --- Client Inputs ---
 participant "Content\nplaintext" as ContentPlaintext
@@ -229,6 +234,7 @@ box "Client"
     end box
 
     participant ContentHashGen
+    participant ContentAuthenticityVerification
     participant ContentDecryption
 
     box "Client-Side Generated Metadata" #LightBlue
@@ -294,7 +300,22 @@ ContentDecryption -> ContentDecryption: Decrypt Content
 ContentDecryption --> ContentPlaintext: Content plaintext
 deactivate ContentDecryption
 
+ContentPlaintext -> ContentHashGen: Content plaintext
+ContentHashKeyMetadata -> ContentHashGen: Content Hash Key
+' --- Content Encryption Key Generation process ---
+activate ContentHashGen
+note right of ContentHashGen: key = Content Hash Key,\nmessage = Content plaintext
+ContentHashGen -> ContentHashGen: Generate\nContent hash
+ContentHashGen --> ContentAuthenticityVerification: Content hash
+deactivate ContentHashGen
+IdentityAADMetadata -> ContentAuthenticityVerification: Identity AAD = Identity nonce || Content hash
+activate ContentAuthenticityVerification
+note right of ContentAuthenticityVerification: Compare the generated Content hash with the Content hash extracted from the Identity AAD
+ContentAuthenticityVerification -> ContentAuthenticityVerification: Compare Content hash
+<-- ContentAuthenticityVerification: Comparison Result
+deactivate ContentAuthenticityVerification
 
 @enduml
 ```
 
+The final Content Authenticity Verification process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
