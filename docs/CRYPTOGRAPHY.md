@@ -196,7 +196,7 @@ deactivate ContentEncKeyEncryption
 
 ' --- Client ---
 participant "Content Hash\nGenerator\n(HMAC-SHA-256)" as ContentHashGen
-participant "Content Authenticity\nVerification" as ContentAuthenticityVerification
+participant "Content Integrity\nVerification" as ContentIntegrityVerification
 participant "Content Decryption\n(AES-256-CTR)" as ContentDecryption
 
 ' --- Client Inputs ---
@@ -234,7 +234,7 @@ box "Client"
     end box
 
     participant ContentHashGen
-    participant ContentAuthenticityVerification
+    participant ContentIntegrityVerification
     participant ContentDecryption
 
     box "Client-Side Generated Metadata" #LightBlue
@@ -306,16 +306,16 @@ ContentHashKeyMetadata -> ContentHashGen: Content Hash Key
 activate ContentHashGen
 note right of ContentHashGen: key = Content Hash Key,\nmessage = Content plaintext
 ContentHashGen -> ContentHashGen: Generate\nContent hash
-ContentHashGen --> ContentAuthenticityVerification: Content hash
+ContentHashGen --> ContentIntegrityVerification: Content hash
 deactivate ContentHashGen
-IdentityAADMetadata -> ContentAuthenticityVerification: Identity AAD = Identity nonce || Content hash
-activate ContentAuthenticityVerification
-note right of ContentAuthenticityVerification: Compare the generated Content hash with the Content hash extracted from the Identity AAD
-ContentAuthenticityVerification -> ContentAuthenticityVerification: Compare Content hash
-<-- ContentAuthenticityVerification: Comparison Result
-deactivate ContentAuthenticityVerification
+IdentityAADMetadata -> ContentIntegrityVerification: Identity AAD = Identity nonce || Content hash
+activate ContentIntegrityVerification
+note right of ContentIntegrityVerification: Compare the generated Content hash with the Content hash extracted from the Identity AAD
+ContentIntegrityVerification -> ContentIntegrityVerification: Compare Content hash
+<-- ContentIntegrityVerification: Comparison Result
+deactivate ContentIntegrityVerification
 
 @enduml
 ```
 
-The final Content Authenticity Verification process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
+The final Content Integrity Verification process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
