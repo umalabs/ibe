@@ -35,7 +35,7 @@ participant "Content Hash Key" as ContentHashKeyMetadata
 participant "Content IV" as ContentIVMetadata
 
 ' --- RS ---
-participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
+participant "HKDF" as HKDF
 participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
 participant "Content nonce\nRND Generator" as ContentNonceRNDGen
 participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
@@ -83,7 +83,7 @@ end box
 
 box "RS"
     participant ContentEncKeyEncryption
-    participant IdentityEncKeyGen
+    participant HKDF
     participant ContentNonceRNDGen
     participant IdentityNonceRNDGen
     participant AuthorizationAssessment
@@ -95,7 +95,7 @@ end box
 
 note across: The request from the Client to the RS for encrypting the Content Encryption Key is authorized using JWT. The response includes the Identity nonce, Identity IV, Content Encryption Key ciphertext, and Identity AAD tag.
 
-Masterkey -> IdentityEncKeyGen: Master Key
+Masterkey -> HKDF: Master Key
 
 ' --- Content plaintext for hash generation ---
 ContentPlaintext -> ContentHashGen: Content plaintext
@@ -143,25 +143,25 @@ ContentEncryption --> ContentCiphertext: Content ciphertext
 deactivate ContentEncryption
 
 ' --- Identity Enc. Key Generation ---
-ContentEncKeyEncryption -> IdentityEncKeyGen: Get Identity\nEncryption Key
+ContentEncKeyEncryption -> HKDF: Get Identity\nEncryption Key
 ' --- Identity nonce Generation ---
-IdentityEncKeyGen -> IdentityNonceRNDGen: Get Identity nonce
+HKDF -> IdentityNonceRNDGen: Get Identity nonce
 ' --- Identity nonce Generation process ---
 activate IdentityNonceRNDGen
 IdentityNonceRNDGen -> IdentityNonceRNDGen: Generate Random\nIdentity nonce
-IdentityNonceRNDGen --> IdentityEncKeyGen: Identity nonce
+IdentityNonceRNDGen --> HKDF: Identity nonce
 deactivate IdentityNonceRNDGen
 ' --- Response Data ---
 IdentityNonceRNDGen --> IdentityAADMetadata: Identity nonce
 ' --- Identity Enc. Key Generation ---
-AuthorizationAssessment-> IdentityEncKeyGen: User ID
+AuthorizationAssessment-> HKDF: User ID
 deactivate AuthorizationAssessment
 ' --- Identity Enc. Key Generation process ---
-activate IdentityEncKeyGen
-note right of IdentityEncKeyGen: key = Master Key,\nmessage = Identity nonce || User ID
-IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
-IdentityEncKeyGen --> ContentEncKeyEncryption: Identity Enc. Key
-deactivate IdentityEncKeyGen
+activate HKDF
+note right of HKDF: Identity Encryption Key =\nHKDF-Expand(HKDF-Extract(Master Key, Identity nonce), User ID, key_length)
+HKDF -> HKDF: Generate\nIdentity Enc. Key
+HKDF --> ContentEncKeyEncryption: Identity Enc. Key
+deactivate HKDF
 ' --- Identity IV Generation ---
 ContentEncKeyEncryption -> ContentNonceRNDGen: Get Identity IV
 ' --- Identity IV Generation process ---
@@ -211,7 +211,7 @@ participant "Content Hash Key" as ContentHashKeyMetadata
 participant "Content IV" as ContentIVMetadata
 
 ' --- RS ---
-participant "Identity Enc. Key\nGenerator\n(HMAC-SHA-256)" as IdentityEncKeyGen
+participant "HKDF" as HKDF
 participant "Content Enc. Key\nDecryption\n(AES-256-GCM)" as ContentEncKeyDecryption
 participant "Authorization\nAssessment" as AuthorizationAssessment
 
@@ -255,7 +255,7 @@ end box
 
 box "RS"
     participant ContentEncKeyDecryption
-    participant IdentityEncKeyGen
+    participant HKDF
     participant AuthorizationAssessment
 
     box "RS Data" #White
@@ -265,7 +265,7 @@ end box
 
 note across: The request from the Client to the RS for decrypting the Content Encryption Key is authorized using JWT. The response includes the Content Encryption Key.
 
-Masterkey -> IdentityEncKeyGen: Master Key
+Masterkey -> HKDF: Master Key
 
 ' --- Content ciphertext decryption ---
 ContentCiphertext -> ContentDecryption: Content ciphertext
@@ -277,14 +277,14 @@ AccessToken->AuthorizationAssessment: JWT (the JWT is included in the authorizat
 activate AuthorizationAssessment
 ' --- Content Encryption Key decryption ---
 IdentityAADMetadata -> ContentEncKeyDecryption: Identity AAD
-AuthorizationAssessment-> IdentityEncKeyGen: User ID
+AuthorizationAssessment-> HKDF: User ID
 deactivate AuthorizationAssessment
-ContentEncKeyDecryption -> IdentityEncKeyGen: Get the Identity Enc. Key\nusing the Identity nonce\nextracted from the\nIdentity AAD
-activate IdentityEncKeyGen
-note right of IdentityEncKeyGen: key = Master Key,\nmessage = Identity nonce || User ID
-IdentityEncKeyGen -> IdentityEncKeyGen: Generate\nIdentity Enc. Key
-IdentityEncKeyGen --> ContentEncKeyDecryption: Identity Enc. Key
-deactivate IdentityEncKeyGen
+ContentEncKeyDecryption -> HKDF: Generate the Identity Enc. Key\nusing the Identity nonce\nextracted from the\nIdentity AAD
+activate HKDF
+note right of HKDF: Identity Encryption Key =\nHKDF-Expand(HKDF-Extract(Master Key, Identity nonce), User ID, key_length)
+HKDF -> HKDF: Generate\nIdentity Enc. Key
+HKDF --> ContentEncKeyDecryption: Identity Enc. Key
+deactivate HKDF
 ContentEncKeyCiphertextMetadata -> ContentEncKeyDecryption: Content Encryption Key ciphertext
 IdentityIVMetadata -> ContentEncKeyDecryption: Identity IV
 IdentityAADTagMetadata -> ContentEncKeyDecryption: Identity AAD Tag
