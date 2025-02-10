@@ -42,7 +42,7 @@ participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
 participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
-participant "Master\nKey" as Masterkey
+participant "Master Key\nTPM 2.0" as Masterkey
 
 ' --- RS-Side Generated Metadata ---
 participant "Content Enc. Key\nciphertext" as ContentEncKeyCiphertextMetadata
@@ -89,7 +89,7 @@ box "RS"
     participant AuthorizationAssessment
 
     box "RS Data" #White
-        participant Masterkey as "Master Key"
+        participant Masterkey
     end box
 end box
 
@@ -216,7 +216,7 @@ participant "Content Enc. Key\nDecryption\n(AES-256-GCM)" as ContentEncKeyDecryp
 participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
-participant "Master\nKey" as Masterkey
+participant "Master Key\nTPM 2.0" as Masterkey
 
 ' --- RS-Side Generated Metadata ---
 participant "Content Enc. Key\nciphertext" as ContentEncKeyCiphertextMetadata
@@ -259,7 +259,7 @@ box "RS"
     participant AuthorizationAssessment
 
     box "RS Data" #White
-        participant Masterkey as "Master Key"
+        participant Masterkey
     end box
 end box
 
