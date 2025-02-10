@@ -318,4 +318,4 @@ deactivate ContentIntegrityVerification
 @enduml
 ```
 
-The final Content Integrity Verification process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
+The decryption process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
