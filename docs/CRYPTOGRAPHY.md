@@ -6,6 +6,7 @@ This is a set of Identity-Based Symmetric Key Cryptography Mechanisms. The clien
 
 ## Acronyms
 
+* AS: Authorization Server
 * RS: Resource Server
 
 <div style="break-after:page"></div>
@@ -318,4 +319,64 @@ deactivate ContentIntegrityVerification
 @enduml
 ```
 
-The decryption process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity.
+The decryption process ensures that the decrypted content is indeed the original content that was encrypted for the specific user and verifies that the Resource Server processed the request correctly within the context of the intended user's identity. The authenticity of the Content hash is ensured by the AAD Tag of the AES-256-GCM function and integrity of the Content plaintext is ensured by the HMAC-SHA-256 function
+
+<div style="break-after:page"></div>
+
+## OAuth 2.0/OIDC PKCE Authorization Code Grant Flow with Audience Restriction and User Email Inclusion
+
+```plantuml
+@startuml
+actor User
+participant "Client" as Client
+participant "AS" as AS
+participant "RS" as RS
+
+== User Initiates Access ==
+User -> Client: Access Application (e.g., visit website or open app)
+
+== Authorization Request ==
+Client -> User: Redirect to Authorization Server
+note right: Includes parameters:\n- response_type=code\n- client_id\n- redirect_uri\n- scope (e.g., read:data openid email)\n- state\n- code_challenge\n- code_challenge_method=S256
+
+User -> AS: Authorization Request
+note right: User-Agent (Browser) sends GET request\nwith the above parameters
+
+== User Authentication and Consent ==
+AS -> User: Prompt for Authentication
+User -> AS: Submit Credentials
+
+AS -> User: Prompt for Consent
+User -> AS: Grant Consent
+
+== Authorization Response ==
+AS -> User: Redirect to Client's redirect_uri\nwith authorization_code and state
+
+== Client Receives Authorization Code ==
+User -> Client: Receive Authorization Code
+note right: Client verifies state parameter
+
+== Token Request ==
+Client -> AS: POST Token Request
+note right: Parameters include:\n- grant_type=authorization_code\n- code\n- redirect_uri\n- client_id\n- code_verifier
+
+== Token Response ==
+AS -> Client: Token Response
+note right: Returns JSON containing:\n- access_token (JWT with `aud` and `email` claims)\n- id_token (JWT with `azp` claim)\n- token_type\n- expires_in
+
+== Access Protected Resource ==
+Client -> RS: API Request with Access Token
+note right: HTTP Header includes:\nAuthorization: Bearer <access_token>
+
+== Token Validation ==
+RS -> AS: (Optional) Introspect Token
+note right: Or validate token signature locally if public keys are available
+
+AS --> RS: Validation Result
+note right: Valid or invalid with claims including `email`
+
+== Provide Protected Resource ==
+RS -> Client: Respond with Protected Data
+
+@enduml
+```
