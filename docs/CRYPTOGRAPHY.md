@@ -15,6 +15,7 @@ This is a set of Identity-Based Symmetric Key Cryptography Mechanisms. The clien
 
 ```plantuml
 @startuml
+scale 2/3
 !pragma teoz true
 
 ' --- Client ---
@@ -26,7 +27,7 @@ participant "Content IV\nRND Generator" as ContentIV_RNDGen
 
 ' --- Client Inputs ---
 participant "Content\nplaintext" as ContentPlaintext
-participant "Access\nToken" as AccessToken
+participant "User ID" as UserID
 
 ' --- Client Outputs ---
 participant "Content\nciphertext" as ContentCiphertext
@@ -40,7 +41,6 @@ participant "HKDF" as HKDF
 participant "Content Enc. Key\nEncryption\n(AES-256-GCM)" as ContentEncKeyEncryption
 participant "Content nonce\nRND Generator" as ContentNonceRNDGen
 participant "Identity nonce\nRND Generator" as IdentityNonceRNDGen
-participant "Authorization\nAssessment" as AuthorizationAssessment
 
 ' --- RS Inputs ---
 participant "Master Key\nTPM 2.0" as Masterkey
@@ -57,7 +57,7 @@ box "Client"
     box "Client Data" #White
         participant ContentPlaintext
         participant ContentCiphertext
-        participant AccessToken
+        participant UserID
     end box
 
     participant ContentHashGen
@@ -87,7 +87,6 @@ box "RS"
     participant HKDF
     participant ContentNonceRNDGen
     participant IdentityNonceRNDGen
-    participant AuthorizationAssessment
 
     box "RS Data" #White
         participant Masterkey
@@ -95,6 +94,7 @@ box "RS"
 end box
 
 note across: The request from the Client to the RS for encrypting the Content Encryption Key is authorized using JWT. The response includes the Identity nonce, Identity IV, Content Encryption Key ciphertext, and Identity AAD tag.
+note over IdentityAADMetadata: The AAD may include additional information, typically the URL of the RS.
 
 Masterkey -> HKDF: Master Key
 
@@ -118,17 +118,15 @@ deactivate ContentHashGen
 ' Content plaintext for encryption
 ContentPlaintext -> ContentEncryption: Content plaintext
 ' Content plaintext Encryption
-ContentEncryption -> ContentEncKeyRNDGen: Get\nContent Enc. Key
+ContentEncryption -> ContentEncKeyRNDGen: Get Content Enc. Key
 ' --- Content Encryption Key Generation process ---
 activate ContentEncKeyRNDGen
 ContentEncKeyRNDGen -> ContentEncKeyRNDGen: Generate Random\nContent Enc. Key
 ContentEncKeyRNDGen --> ContentEncryption: Content Enc. Key
 deactivate ContentEncKeyRNDGen
+UserID->ContentEncKeyRNDGen: User ID (usually the email address of the individual authorized to decrypt the Content Enc. Key and,\nsubsequently, the Content ciphertext)
 ' --- Request for encrypting the Content Encryption Key ---
-ContentEncKeyRNDGen -> ContentEncKeyEncryption: The request for encrypting the Content Encryption Key (the body of the request includes the Content Encryption Key)
-' --- Request Authorization Header
-AccessToken->AuthorizationAssessment: JWT (the JWT is included in the authorization header of the request)
-activate AuthorizationAssessment
+ContentEncKeyRNDGen -> ContentEncKeyEncryption: The request for encrypting the Content Encryption Key (the body of the request includes the Content Encryption Key and the User ID)
 ' --- Content plaintext IV Generation ---
 ContentEncryption -> ContentIV_RNDGen: Get Content IV
 ' --- Content plaintext IV Generation process ---
@@ -155,8 +153,7 @@ deactivate IdentityNonceRNDGen
 ' --- Response Data ---
 IdentityNonceRNDGen --> IdentityAADMetadata: Identity nonce
 ' --- Identity Enc. Key Generation ---
-AuthorizationAssessment-> HKDF: User ID
-deactivate AuthorizationAssessment
+ContentEncKeyEncryption-> HKDF: User ID
 ' --- Identity Enc. Key Generation process ---
 activate HKDF
 note right of HKDF: Identity Encryption Key =\nHKDF-Expand(HKDF-Extract(Master Key, Identity nonce), User ID, key_length)
@@ -193,6 +190,7 @@ deactivate ContentEncKeyEncryption
 
 ```plantuml
 @startuml
+scale 2/3
 !pragma teoz true
 
 ' --- Client ---
@@ -327,6 +325,8 @@ The decryption process ensures that the decrypted content is indeed the original
 
 ```plantuml
 @startuml
+scale 2/3
+!pragma teoz true
 actor User
 participant "Client" as Client
 participant "AS" as AS
@@ -362,7 +362,7 @@ note right: Parameters include:\n- grant_type=authorization_code\n- code\n- redi
 
 == Token Response ==
 AS -> Client: Token Response
-note right: Returns JSON containing:\n- access_token (JWT with `aud` and `email` claims)\n- id_token (JWT with `azp` claim)\n- token_type\n- expires_in
+note right: Returns JSON containing:\n- access_token (JWT with `aud`, `azp`, and `email` claims)\n- token_type\n- expires_in
 
 == Access Protected Resource ==
 Client -> RS: API Request with Access Token
@@ -380,3 +380,37 @@ RS -> Client: Respond with Protected Data
 
 @enduml
 ```
+
+The sequence diagram outlines a mechanism for authenticating users and authorizing access to protected resources using the OAuth 2.0 protocol, enhanced with Proof Key for Code Exchange (PKCE). 
+
+Key enhancements in this mechanism include the utilization of the `scope` parameter to define the `aud` (audience) claim within the Access Token, thereby restricting token validity to specific RSs. This ensures that access tokens are purpose-bound, enhancing security by preventing misuse across unintended services. Additionally, the Access Token incorporates the authenticated user's email address as an `email` claim, providing the RS with a reliable identifier for personalized access controls without necessitating additional user information requests. Further strengthening the security framework, the inclusion of the `azp` (Authorized Party) claim within the Access Token binds the token to the specific project or account service ID of the application that requested the token.
+
+The sequence begins with the user initiating access to the client application, which redirects the user to the AS with a detailed authorization request containing parameters such as `scope`, `state`, and PKCE-related values (`code_challenge` and `code_challenge_method`). Upon successful authentication and user consent, the AS issues an Access Token. The Access Token, enriched with the `aud`, `azp`, and `email` claims, is then utilized by the client application to access protected resources from the RS. The RS validates the token's integrity, audience, and extracts the user's email to manage access appropriately.
+
+## Autorization and Identity-Based Symmetric Key Cryptography Mechanisms
+
+In unrestricted mode, anyone can access the RS and encrypt content for others. However, during the decryption process, authorization is required, and a valid access token with the appropriate claims must be provided.
+
+<div style="break-after:page"></div>
+
+## Real-World Scenario
+
+We illustrate the process of securely sharing data between Alice and Bob, where Alice wants to share a vacation photo with Bob.
+
+### Prerequisites
+
+Alice uses an application (Client) that allows her authenticate via the Authorization Server (AS) and store, retrieve, and share encrypted files on the data store (RS1). Additionally, the Client has access to the Keyring (RS2), which provides identity-based cryptographic functions.  The Client has simultaneous access to both the RS1 and RS2. Alice also knows that Bob can obtain authorized access to RS1 and RS2. 
+
+### Use Case
+
+Alice opens her vacation photo in the Client and enters Bob's email address in the "Share with:" field. She then clicks the "Share" button. The Client encrypts the photo on the client side using RS2's identity-based cryptographic functions and stores the encrypted photo along with its metadata in RS1.
+
+Afterward, Alice notifies Bob that he can access the photo by sending him a shared link to the encrypted file stored in RS1.
+
+Bob can open the shared link after authenticating via AS. His Client retrieves the encrypted photo along with its metadata from RS1, and decrypts it on the client side using RS2's identity-based cryptographic functions. Finally Bob saves the decrypted photo to his local storage.
+
+<div style="break-after:page"></div>
+
+## Conclusion
+
+TBD
