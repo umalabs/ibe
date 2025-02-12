@@ -48,7 +48,7 @@
 <h2 id="real-world-scenario">Real-World Scenario </h2>
 <p>We illustrate the process of securely sharing data between Alice and Bob, where Alice wants to share a vacation photo with Bob.</p>
 <h3 id="prerequisites">Prerequisites </h3>
-<p>Alice uses an application (Client) that allows her authenticate via the Authorization Server (AS) and store, retrieve, and share encrypted files on the data store (RS1). Additionally, the Client has access to the Keyring (RS2), which provides identity-based cryptographic functions.  The Client has simultaneous access to both the RS1 and RS2. Alice also knows that Bob can obtain authorized access to RS1 and RS2.</p>
+<p>Alice uses an application (Client) that allows her authenticate via the Authorization Server (AS) and store, retrieve, and share encrypted files on the remote data store (RS1). Additionally, the Client has access to the remote keyring (RS2), which provides identity-based cryptographic functions.  The Client has simultaneous access to both the RS1 and RS2. Alice also knows that Bob can obtain authorized access to RS1 and RS2.</p>
 <h3 id="use-case">Use Case </h3>
 <p>Alice opens her vacation photo in the Client and enters Bob's email address in the "Share with:" field. She then clicks the "Share" button. The Client encrypts the photo on the client side using RS2's identity-based cryptographic functions and stores the encrypted photo along with its metadata in RS1.</p>
 <p>Afterward, Alice notifies Bob that he can access the photo by sending him a shared link to the encrypted file stored in RS1.</p>
