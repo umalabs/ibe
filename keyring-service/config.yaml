@@ -1,0 +1,7 @@
+server:
+  address: ":8080"
+
+masterKey: "OTFjYThiZmNmMmNhZGVlMjg5MzM1ZTQyZmFhMmM3MmU="
+
+database:
+  path: "data/keyring.db"
