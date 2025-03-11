@@ -9,7 +9,24 @@
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "keyring-service/main.go"
+      "program": "keyring-service/main.go",
+      "env": {
+          "SERVER_ADDRESS": ":8080",
+          "MASTER_KEY": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
+          "DATABASE_PATH": "data/keyring.db"
+      }
+    },
+    {
+      "name": "Keyring2",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "keyring-service/main.go",
+      "env": {
+          "SERVER_ADDRESS": ":8082",
+          "MASTER_KEY": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDI=",
+          "DATABASE_PATH": "data/keyring2.db"
+      }
     }
   ]
 }

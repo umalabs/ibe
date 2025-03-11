@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Initialize database (if needed)
-	database.InitDB(config.Config.Database.Path)
+	database.InitDB(config.Cfg.Database.Path)
 
 	// Start HTTP server
 	mux := http.NewServeMux()
@@ -20,8 +20,8 @@ func main() {
 	mux.HandleFunc("/encryptKey", handlers.EncryptKeyHandler)
 	mux.HandleFunc("/decryptKey", handlers.DecryptKeyHandler)
 
-	log.Printf("Starting server on %s...", config.Config.Server.Address)
-	err := http.ListenAndServe(config.Config.Server.Address, mux)
+	log.Printf("Starting server on %s...", config.Cfg.Server.Address)
+	err := http.ListenAndServe(config.Cfg.Server.Address, mux)
 	if err != nil {
 		log.Fatalf("Server error: %v", err)
 	}

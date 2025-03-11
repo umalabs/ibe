@@ -40,7 +40,7 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Load the Master Key from the config
-	masterKeyBytes, err := base64.StdEncoding.DecodeString(config.Config.MasterKey)
+	masterKeyBytes, err := base64.StdEncoding.DecodeString(config.Cfg.MasterKey)
 	if err != nil {
 		http.Error(w, "Invalid Master Key", http.StatusInternalServerError)
 		return
