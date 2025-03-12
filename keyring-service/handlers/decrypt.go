@@ -25,6 +25,12 @@ func DecryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the user is the owner
+	if email != config.Cfg.Owner {
+		http.Error(w, "Unauthorized: "+ "not owner", http.StatusUnauthorized)
+		return
+	}
+
 	// Read the ciphertext and identity AAD tag from the request body
 	var request struct {
 		ContentEncKeyCiphertext string `json:"contentEncKeyCiphertext"` // Base64 encoded

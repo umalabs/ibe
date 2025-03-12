@@ -1,7 +1,9 @@
 server:
   address: ":8080"
 
-masterKey: "OTFjYThiZmNmMmNhZGVlMjg5MzM1ZTQyZmFhMmM3MmU="
-
 database:
   path: "data/keyring.db"
+
+masterKey: "OTFjYThiZmNmMmNhZGVlMjg5MzM1ZTQyZmFhMmM3MmU="
+clientId: "584573895249-qgb6lesjtvhirl0t1tl23pgkkvbioigm.apps.googleusercontent.com"
+owner: "izboran@gmail.com"

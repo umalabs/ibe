@@ -9,8 +9,10 @@ import (
 
 type Configuration struct {
 	Server    ServerConfig   `yaml:"server"`
-	MasterKey string         `yaml:"masterKey"`
 	Database  DatabaseConfig `yaml:"database"`
+	MasterKey string         `yaml:"masterKey"`
+	ClientId  string         `yaml:"clientId"`
+	Owner     string         `yaml:"owner"`
 }
 
 type ServerConfig struct {
@@ -48,14 +50,24 @@ func (c *Configuration) loadConfig(filename string) error {
 		c.Server.Address = serverAddress
 	}
 
+	if databasePath := os.Getenv("DATABASE_PATH"); databasePath != "" {
+		log.Printf("Using environment variable for DATABASE_PATH: %s\n", databasePath)
+		c.Database.Path = databasePath
+	}
+
 	if masterKey := os.Getenv("MASTER_KEY"); masterKey != "" {
 		log.Printf("Using environment variable for MASTER_KEY: %s\n", masterKey)
 		c.MasterKey = masterKey
 	}
 
-	if databasePath := os.Getenv("DATABASE_PATH"); databasePath != "" {
-		log.Printf("Using environment variable for DATABASE_PATH: %s\n", databasePath)
-		c.Database.Path = databasePath
+	if clientId := os.Getenv("CLIENT_ID"); clientId != "" {
+		log.Printf("Using environment variable for CLIENT_ID: %s\n", clientId)
+		c.ClientId = clientId
+	}
+
+	if owner := os.Getenv("OWNER"); owner != "" {
+		log.Printf("Using environment variable for OWNER: %s\n", owner)
+		c.Owner = owner
 	}
 
 	return nil

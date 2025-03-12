@@ -9,15 +9,21 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/umalabs/ibe/keyring-service/keyring-service/auth"
 	"github.com/umalabs/ibe/keyring-service/keyring-service/config"
 	"github.com/umalabs/ibe/keyring-service/keyring-service/hkdf"
 )
 
-var email string = "izboran@gmail.com"
-
 func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Authenticate the request
+	email, err := auth.AuthenticateRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -26,7 +32,7 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 		ContentEncKey string `json:"contentEncKey"` // Base64 encoded
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&request)
+	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return

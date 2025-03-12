@@ -12,8 +12,10 @@
       "program": "keyring-service/main.go",
       "env": {
           "SERVER_ADDRESS": ":8080",
+          "DATABASE_PATH": "data/keyring.db",
           "MASTER_KEY": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
-          "DATABASE_PATH": "data/keyring.db"
+          "CLIENT_ID": "584573895249-qgb6lesjtvhirl0t1tl23pgkkvbioigm.apps.googleusercontent.com",
+          "OWNER": "izboran@gmail.com",
       }
     },
     {
@@ -24,8 +26,10 @@
       "program": "keyring-service/main.go",
       "env": {
           "SERVER_ADDRESS": ":8082",
+          "DATABASE_PATH": "data/keyring2.db",
           "MASTER_KEY": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDI=",
-          "DATABASE_PATH": "data/keyring2.db"
+          "CLIENT_ID": "584573895249-qcmtrglie8mabjjm92j8vl9vfdjumh4g.apps.googleusercontent.com",
+          "OWNER": "igor.zboran@gmail.com",
       }
     }
   ]
