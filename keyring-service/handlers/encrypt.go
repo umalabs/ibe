@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -23,7 +24,7 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 	// Authenticate the request
 	email, err := auth.AuthenticateRequest(r)
 	if err != nil {
-		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+		http.Error(w, fmt.Sprintf("Unauthorized: %v", err), http.StatusUnauthorized)
 		return
 	}
 
@@ -34,21 +35,21 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Bad Request: Invalid request body: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	// Decode the content encryption key
 	contentEncKey, err := base64.StdEncoding.DecodeString(request.ContentEncKey)
 	if err != nil {
-		http.Error(w, "Invalid Content Encryption Key", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Bad Request: Invalid Content Encryption Key: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	// Load the Master Key from the config
 	masterKeyBytes, err := base64.StdEncoding.DecodeString(config.Cfg.MasterKey)
 	if err != nil {
-		http.Error(w, "Invalid Master Key", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Internal Server Error: Invalid Master Key: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -56,7 +57,7 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 	identityNonce := make([]byte, 16) // 16 bytes nonce
 	_, err = rand.Read(identityNonce)
 	if err != nil {
-		http.Error(w, "Error generating nonce", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Internal Server Error: Error generating nonce: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -66,20 +67,20 @@ func EncryptKeyHandler(w http.ResponseWriter, r *http.Request) {
 	// Encrypt the Content Encryption Key using AES-256-GCM
 	block, err := aes.NewCipher(identityEncKey)
 	if err != nil {
-		http.Error(w, "Error creating cipher", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Internal Server Error: Error creating cipher: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		http.Error(w, "Error creating GCM", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Internal Server Error: Error creating GCM: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// Generate a random IV
 	iv := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		http.Error(w, "Error generating IV", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Internal Server Error: Error generating IV: %v", err), http.StatusInternalServerError)
 		return
 	}
 
